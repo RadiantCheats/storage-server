@@ -10,8 +10,10 @@ const port = config.port || "3000";
 const __dirname = path.resolve(path.dirname('..'));
 const keys = config.keys;
 
+app.use(bodyParser.json())
+
 app.use('/*', (req, res, next) => {
-    if (keys.includes(req.headers['unfortunatism']) && decrypt(req.headers['iv'], req.headers['content']) == encrypt(req.headers['iv'])) {
+    if (keys.includes(req.headers['unfortunatism']) && decrypt(req.headers['iv'], req.headers['content']) == config.secret) {
         next();
     } else {
         res.send({ success: false });
@@ -20,12 +22,11 @@ app.use('/*', (req, res, next) => {
 
 // Files
 
-app.use(bodyParser.json())
-
 app.get('/authtokens', (req, res) => {
     return res.sendFile(__dirname + '/storage/authtokens.json');
 })
 app.post('/authtokens', (req, res) => {
+    /*
     const body = req.body;
     if (!body) return res.send({ success: false })
     fs.readFile(__dirname + '/storage/authtokens.json', (err, data) => {
@@ -43,6 +44,16 @@ app.post('/authtokens', (req, res) => {
             }
         });
       });
+    */
+      const body = req.body;
+      if (!body) return res.send({ success: false })
+      fs.writeFile(__dirname + '/storage/authtokens.json', JSON.stringify(body), (err, result) => {
+          if (err) {
+              return res.send({ success: false, message: 'An error occurred in fs.' })
+          } else {
+              return res.send({ success: true, body: JSON.stringify(body) })
+          }
+      })
 })
 
 app.get('/giveaways', (req,res) => {
@@ -52,6 +63,21 @@ app.post('/giveaways', (req, res) => {
     const body = req.body;
     if (!body) return res.send({ success: false })
     fs.writeFile(__dirname + '/storage/giveaways.json', JSON.stringify(body), (err, result) => {
+        if (err) {
+            return res.send({ success: false, message: 'An error occurred in fs.' })
+        } else {
+            return res.send({ success: true, body: JSON.stringify(body) })
+        }
+    })
+})
+
+app.get('/donatebot', (req,res) => {
+    return res.sendFile(__dirname + '/donatebot.json');
+})
+app.post('/donatebot', (req, res) => {
+    const body = req.body;
+    if (!body) return res.send({ success: false })
+    fs.writeFile(__dirname + '/storage/donatebot.json', JSON.stringify(body), (err, result) => {
         if (err) {
             return res.send({ success: false, message: 'An error occurred in fs.' })
         } else {
@@ -84,7 +110,6 @@ app.post('/backups', (req, res) => {
 app.use(bodyParser.text())
 
 app.get('/transcripts', (req,res) => {
-    app.use(bodyParser.text())
     const id = req.query.id;
     if (!id) return res.send({ success: false })
     return res.sendFile(__dirname + `/storage/transcripts/${id}.html`);
